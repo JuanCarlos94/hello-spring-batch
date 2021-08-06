@@ -56,6 +56,13 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 		}).build();
 	}
 
+	@Bean
+	public Step stepManipulatintExecutionContext(){
+		return this.stepBuilderFactory.get("stepManipulatintExecutionContext")
+			.tasklet(new ManipulatingExecutionContext())
+			.build();
+	}
+
 	@Bean 
 	@StepScope
 	public Tasklet printCommandLineParams(@Value("#{jobParameters['filename']}") String filename, @Value("#{jobParameters['name']}") String name){
@@ -69,7 +76,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Bean
 	public Job job(){
 		return this.jobBuilderFactory.get("job")
-			.start(this.stepPrintParams())
+			.start(this.stepManipulatintExecutionContext())
 			.listener(new JobLoggerListener())
 			.build();
 	}
