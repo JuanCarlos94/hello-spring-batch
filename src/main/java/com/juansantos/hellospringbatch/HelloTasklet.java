@@ -6,7 +6,7 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 
-public class ManipulatingExecutionContext implements Tasklet {
+public class HelloTasklet implements Tasklet {
     private static final String HELLO_WORLD = "Hello, %s";
 
     public RepeatStatus execute(StepContribution step, ChunkContext context){

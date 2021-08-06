@@ -7,11 +7,13 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepContribution;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
@@ -35,9 +37,6 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Autowired
 	private JobLauncher jobLauncher;
 
-	@Autowired
-	private Job job;
-
 	@Bean
 	public Step stepPrintParams(){
 		return this.stepBuilderFactory.get("stepPrintParams")
@@ -57,9 +56,23 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	}
 
 	@Bean
-	public Step stepManipulatintExecutionContext(){
+	public Step stepHelloContext(){
 		return this.stepBuilderFactory.get("stepManipulatintExecutionContext")
-			.tasklet(new ManipulatingExecutionContext())
+			.tasklet(new HelloTasklet())
+			.build();
+	}
+
+	@Bean
+	public Step stepPassingPromotionKeys(){
+		return this.stepBuilderFactory.get("stepPassingPromotionKeys")
+			.tasklet(new HelloTasklet())
+			.build();
+	}
+
+	@Bean
+	public Step stepPassingPromotionKeys2(){
+		return this.stepBuilderFactory.get("stepPassingPromotionKeys2")
+			.tasklet(new GoodByeTasklet())
 			.build();
 	}
 
@@ -76,9 +89,17 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Bean
 	public Job job(){
 		return this.jobBuilderFactory.get("job")
-			.start(this.stepManipulatintExecutionContext())
-			.listener(new JobLoggerListener())
+			.start(this.stepPassingPromotionKeys())
+			.next(this.stepPassingPromotionKeys2())
+			.listener(this.promotionListener())
 			.build();
+	}
+
+	@Bean
+	public StepExecutionListener promotionListener(){
+		ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
+		listener.setKeys(new String[]{"nam"});
+		return listener;
 	}
 
 	public static void main(String[] args) {
@@ -92,7 +113,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 		JobParameters jobParameters = new JobParametersBuilder().addString("filename", "teste.csv")
                 .addString("name", "Juan").toJobParameters();
 
-		JobExecution execution = jobLauncher.run(job, jobParameters);
+		JobExecution execution = jobLauncher.run(job(), jobParameters);
 		System.out.println("STATUS :: "+execution.getStatus());
 	}
 
