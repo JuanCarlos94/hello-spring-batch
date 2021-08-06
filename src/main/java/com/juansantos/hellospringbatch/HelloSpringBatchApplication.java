@@ -70,6 +70,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	public Job job(){
 		return this.jobBuilderFactory.get("job")
 			.start(this.stepPrintParams())
+			.listener(new JobLoggerListener())
 			.build();
 	}
 
