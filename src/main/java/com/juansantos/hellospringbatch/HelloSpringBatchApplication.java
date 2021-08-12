@@ -85,7 +85,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Bean
 	public Step importTransactionFileStep(){
 		return this.stepBuilderFactory.get("importTransactionFileStep")
-			.startLimit(2)
+			.allowStartIfComplete(true)
 			.<Transaction, Transaction>chunk(100)
 			.reader(transactionReader())
 			.writer(transactionWriter(null))
