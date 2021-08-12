@@ -85,6 +85,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Bean
 	public Step importTransactionFileStep(){
 		return this.stepBuilderFactory.get("importTransactionFileStep")
+			.startLimit(2)
 			.<Transaction, Transaction>chunk(100)
 			.reader(transactionReader())
 			.writer(transactionWriter(null))
@@ -170,7 +171,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Bean
 	public Job transactionJob(){
 		return this.jobBuilderFactory.get("transactionJob")
-			.preventRestart()
+			.incrementer(new RunIdIncrementer())
 			.start(importTransactionFileStep())
 			.next(applyTransactionStep())
 			.next(generateAccountSummaryStep())
@@ -192,6 +193,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 		JobParameters jobParameters = new JobParametersBuilder(this.jobExplorer)
 			.addString("transactionFile", "transactionFile.csv")
 			.addString("summaryFile", "summary.csv")
+			.getNextJobParameters(transactionJob())
 			.toJobParameters();
 		JobExecution jobExecution = jobLauncher.run(transactionJob(), jobParameters);
 		System.out.println("STATUS :: " + jobExecution.getStatus());
