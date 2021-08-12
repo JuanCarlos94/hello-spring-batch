@@ -2,6 +2,7 @@ package com.juansantos.hellospringbatch;
 
 
 
+import javax.batch.runtime.StepExecution;
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
@@ -99,10 +100,9 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 		return new JdbcCursorItemReaderBuilder<AccountSummary>()
 			.name("accountSummaryReader")
 			.dataSource(dataSource)
-			.sql("SELECT ACCOUNT_NUMBER, CURRENT_BALANCE " +
+			.sql("SELECT A.ACCOUNT_NUMBER, A.CURRENT_BALANCE " +
 				"FROM ACCOUNT_SUMMARY A " +
-				"WHERE A.ID IN (" +
-				"SELECT DISTINCT T.ACCOUNT_SUMMARY_ID FROM TRANSACTION T)" +
+				"WHERE A.ID IN (SELECT DISTINCT T.ACCOUNT_SUMMARY_ID FROM TRANSACTION T) " +
 				"ORDER BY A.ACCOUNT_NUMBER")
 			.rowMapper((resultSet, rowNumber) -> {
 				AccountSummary summary = new AccountSummary();
@@ -173,10 +173,8 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 		return this.jobBuilderFactory.get("transactionJob")
 			.incrementer(new RunIdIncrementer())
 			.start(importTransactionFileStep())
-			.on("STOPPED").stopAndRestart(importTransactionFileStep())
-			.from(importTransactionFileStep()).on("*").to(applyTransactionStep())
-			.from(applyTransactionStep()).next(generateAccountSummaryStep())
-			.end()
+			.next(applyTransactionStep())
+			.next(generateAccountSummaryStep())
 			.build();
 	}
 
