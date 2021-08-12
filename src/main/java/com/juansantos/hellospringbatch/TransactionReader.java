@@ -1,12 +1,11 @@
 package com.juansantos.hellospringbatch;
 
-import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ItemStreamReader;
+import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.file.transform.FieldSet;
 
 public class TransactionReader implements ItemStreamReader<Transaction> {
@@ -23,6 +22,9 @@ public class TransactionReader implements ItemStreamReader<Transaction> {
     }
 
     public Transaction read() throws Exception {
+        if(this.recordCount == 25){
+            throw new ParseException("This isn't what I hoped to happen");
+        }
         return process(fieldSetReader.read());
     }
 

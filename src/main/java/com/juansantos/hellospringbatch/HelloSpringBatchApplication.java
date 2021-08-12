@@ -2,7 +2,6 @@ package com.juansantos.hellospringbatch;
 
 
 
-import javax.batch.runtime.StepExecution;
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
@@ -171,7 +170,7 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	@Bean
 	public Job transactionJob(){
 		return this.jobBuilderFactory.get("transactionJob")
-			.incrementer(new RunIdIncrementer())
+			.preventRestart()
 			.start(importTransactionFileStep())
 			.next(applyTransactionStep())
 			.next(generateAccountSummaryStep())
@@ -193,7 +192,6 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 		JobParameters jobParameters = new JobParametersBuilder(this.jobExplorer)
 			.addString("transactionFile", "transactionFile.csv")
 			.addString("summaryFile", "summary.csv")
-			.getNextJobParameters(transactionJob())
 			.toJobParameters();
 		JobExecution jobExecution = jobLauncher.run(transactionJob(), jobParameters);
 		System.out.println("STATUS :: " + jobExecution.getStatus());
