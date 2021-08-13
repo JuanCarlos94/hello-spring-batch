@@ -1,7 +1,7 @@
 package com.juansantos.hellospringbatch;
 
 
-import javax.sql.DataSource;
+import java.util.Collections;
 
 import com.juansantos.hellospringbatch.models.Customer;
 
@@ -17,15 +17,15 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.data.RepositoryItemReader;
+import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
+import org.springframework.data.domain.Sort;
 
 @EnableBatchProcessing
 @SpringBootApplication
@@ -38,27 +38,22 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Bean
-	public JdbcCursorItemReader<Customer> customerItemReader(DataSource dataSource){
-		return new JdbcCursorItemReaderBuilder<Customer>()
-			.name("customerItemReader")
-			.dataSource(dataSource)
-			.sql("select * from customer where city = ?")
-			.rowMapper(new CustomerRowMapper())
-			.preparedStatementSetter(citySetter(null))
-			.build();
-	}
-
-	@Bean
 	@StepScope
-	public ArgumentPreparedStatementSetter citySetter(@Value("#{jobParameters['city']}") String city){
-		return new ArgumentPreparedStatementSetter(new Object[]{city});
+	public RepositoryItemReader<Customer> customerItemReader(CustomerRepository repository, @Value("#{jobParameters['city']}") String city){
+		return new RepositoryItemReaderBuilder<Customer>()
+			.name("customerItemReader")
+			.arguments(Collections.singletonList(city))
+			.methodName("findByCity")
+			.repository(repository)
+			.sorts(Collections.singletonMap("lastName", Sort.Direction.ASC))
+			.build();
 	}
 
 	@Bean
 	public Step step(){
 		return this.stepBuilderFactory.get("step")
 			.<Customer, Customer>chunk(10)
-			.reader(customerItemReader(null))
+			.reader(customerItemReader(null, null))
 			.writer(itemWriter())
 			.build();
 	}

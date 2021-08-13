@@ -14,7 +14,6 @@ public class Customer {
     private String state;
     private String zipCode;
 
-    private List<Transaction> transactions;
 
     public Customer() {
     }
@@ -92,14 +91,6 @@ public class Customer {
 
     public void setZipCode(String zipCode) {
         this.zipCode = zipCode;
-    }
-
-    public List<Transaction> getTransactions() {
-        return transactions;
-    }
-
-    public void setTransactions(List<Transaction> transactions) {
-        this.transactions = transactions;
     }
 
     @Override
