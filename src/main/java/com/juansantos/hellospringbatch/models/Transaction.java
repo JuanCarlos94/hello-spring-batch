@@ -4,9 +4,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.xml.bind.annotation.XmlType;
 
-@XmlType(name="transaction")
 public class Transaction {
 
     private String accountNumber;

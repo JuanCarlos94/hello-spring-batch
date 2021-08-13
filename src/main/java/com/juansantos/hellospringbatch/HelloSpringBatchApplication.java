@@ -1,8 +1,9 @@
 package com.juansantos.hellospringbatch;
 
 
+import javax.sql.DataSource;
+
 import com.juansantos.hellospringbatch.models.Customer;
-import com.juansantos.hellospringbatch.models.Transaction;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
@@ -16,20 +17,19 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.xml.StaxEventItemReader;
-import org.springframework.batch.item.xml.builder.StaxEventItemReaderBuilder;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.Resource;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
 
 @EnableBatchProcessing
 @SpringBootApplication
-public class HelloSpringBatchApplication implements CommandLineRunner{
+public class HelloSpringBatchApplication implements CommandLineRunner {
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -38,10 +38,27 @@ public class HelloSpringBatchApplication implements CommandLineRunner{
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Bean
-	public Step copyFileStep(){
-		return this.stepBuilderFactory.get("copyFileStep")
+	public JdbcCursorItemReader<Customer> customerItemReader(DataSource dataSource){
+		return new JdbcCursorItemReaderBuilder<Customer>()
+			.name("customerItemReader")
+			.dataSource(dataSource)
+			.sql("select * from customer where city = ?")
+			.rowMapper(new CustomerRowMapper())
+			.preparedStatementSetter(citySetter(null))
+			.build();
+	}
+
+	@Bean
+	@StepScope
+	public ArgumentPreparedStatementSetter citySetter(@Value("#{jobParameters['city']}") String city){
+		return new ArgumentPreparedStatementSetter(new Object[]{city});
+	}
+
+	@Bean
+	public Step step(){
+		return this.stepBuilderFactory.get("step")
 			.<Customer, Customer>chunk(10)
-			.reader(costomerFileReader(null))
+			.reader(customerItemReader(null))
 			.writer(itemWriter())
 			.build();
 	}
@@ -50,27 +67,8 @@ public class HelloSpringBatchApplication implements CommandLineRunner{
 	public Job job(){
 		return this.jobBuilderFactory.get("job")
 			.incrementer(new RunIdIncrementer())
-			.start(copyFileStep())
+			.start(step())
 			.build();
-	}
-
-	@Bean
-	@StepScope
-	public StaxEventItemReader<Customer> costomerFileReader(@Value("#{jobParameters['customerFile']}") Resource inputFile){
-		System.out.println("Resource: " + inputFile);
-		return new StaxEventItemReaderBuilder<Customer>()
-			.name("customerFileReader")
-			.resource(inputFile)
-			.addFragmentRootElements("customer")
-			.unmarshaller(customerMarshaller())
-			.build();
-	}
-
-	@Bean
-	public Jaxb2Marshaller customerMarshaller(){
-		Jaxb2Marshaller jaxb2Marshaller = new Jaxb2Marshaller();
-		jaxb2Marshaller.setClassesToBeBound(Customer.class, Transaction.class);
-		return jaxb2Marshaller;
 	}
 
 	@Bean
@@ -87,14 +85,14 @@ public class HelloSpringBatchApplication implements CommandLineRunner{
 
 	@Autowired
 	private JobExplorer jobExplorer;
-	
+
 	@Override
 	public void run(String... args) throws Exception {
-		JobParameters params = new JobParametersBuilder(jobExplorer)
-			.addString("customerFile", "customer.xml")
+		JobParameters jobParameters = new JobParametersBuilder(jobExplorer)
+			.addString("city", "Springfield")
 			.getNextJobParameters(job())
 			.toJobParameters();
-		jobLauncher.run(job(), params);
+		jobLauncher.run(job(), jobParameters);
 	}
 
 }
