@@ -1,11 +1,14 @@
 package com.juansantos.hellospringbatch.models;
 
-import java.util.List;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 
+@Entity
 public class Customer {
 
+    @Id @GeneratedValue
     private Long id;
-
     private String firstName;
     private String middleInitial;
     private String lastName;
