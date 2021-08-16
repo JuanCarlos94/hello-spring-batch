@@ -40,22 +40,17 @@ public class HelloSpringBatchApplication implements CommandLineRunner {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Bean
-	@StepScope
-	public RepositoryItemReader<Customer> customerItemReader(CustomerRepository repository, @Value("#{jobParameters['city']}") String city){
-		return new RepositoryItemReaderBuilder<Customer>()
-			.name("customerItemReader")
-			.arguments(Collections.singletonList(city))
-			.methodName("findByCity")
-			.repository(repository)
-			.sorts(Collections.singletonMap("lastName", Sort.Direction.ASC))
-			.build();
+	public CustomerItemReader customerItemReader(){
+		CustomerItemReader customerItemReader = new CustomerItemReader();
+		customerItemReader.setName("customerItemReader");
+		return customerItemReader;
 	}
 
 	@Bean
 	public Step step(){
 		return this.stepBuilderFactory.get("step")
 			.<Customer, Customer>chunk(10)
-			.reader(customerItemReader(null, null))
+			.reader(customerItemReader())
 			.writer(itemWriter())
 			.build();
 	}
